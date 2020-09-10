@@ -5,6 +5,13 @@ This project employs a versioning scheme described in [RELEASE.md](RELEASE.md#ve
 
 ## [Unreleased]
 
+### Changed
+- Update images
+  - etcd 3.3.25
+  - Kubernetes 1.18.8
+  - CoreDNS 1.7.0
+  - Unbound 1.11.0
+
 ## Ancient changes
 
 - See [release-1.17/CHANGELOG.md](https://github.com/cybozu-go/cke/blob/release-1.17/CHANGELOG.md) for changes in CKE 1.17.
