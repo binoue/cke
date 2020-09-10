@@ -9,8 +9,8 @@ require (
 	github.com/99designs/gqlgen v0.9.3
 	github.com/agnivade/levenshtein v1.0.2 // indirect
 	github.com/containernetworking/cni v0.8.0
-	github.com/coreos/etcd v3.3.19+incompatible
-	github.com/cybozu-go/etcdutil v1.3.4
+	github.com/coreos/etcd v3.3.25+incompatible
+	github.com/cybozu-go/etcdutil v1.3.5
 	github.com/cybozu-go/log v1.5.0
 	github.com/cybozu-go/netutil v1.2.0
 	github.com/cybozu-go/well v1.8.1
@@ -20,7 +20,6 @@ require (
 	github.com/docker/go-units v0.3.3 // indirect
 	github.com/etcd-io/gofail v0.0.0-20180808172546-51ce9a71510a
 	github.com/evanphx/json-patch v4.2.0+incompatible // indirect
-	github.com/golang/groupcache v0.0.0-20181024230925-c65c006176ff // indirect
 	github.com/google/go-cmp v0.3.0
 	github.com/googleapis/gnostic v0.3.1 // indirect
 	github.com/hashicorp/vault/api v1.0.5-0.20200117231345-460d63e36490
