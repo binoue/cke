@@ -2,10 +2,10 @@ package cke
 
 import (
 	"github.com/coreos/etcd/etcdserver/etcdserverpb"
-	schedulerv1 "k8s.io/kube-scheduler/config/v1"
-
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
+	schedulerv1 "k8s.io/kube-scheduler/config/v1"
+	kubeletv1beta1 "k8s.io/kubelet/config/v1beta1"
 )
 
 // EtcdClusterStatus is the status of the etcd cluster.
@@ -146,9 +146,6 @@ type SchedulerStatus struct {
 // KubeletStatus represents kubelet status and health
 type KubeletStatus struct {
 	ServiceStatus
-	IsHealthy            bool
-	Domain               string
-	AllowSwap            bool
-	ContainerLogMaxSize  string
-	ContainerLogMaxFiles int32
+	IsHealthy bool
+	Config    *kubeletv1beta1.KubeletConfiguration
 }

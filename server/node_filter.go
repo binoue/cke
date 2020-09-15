@@ -512,7 +512,12 @@ func (nf *NodeFilter) KubeletOutdatedNodes() (nodes []*cke.Node) {
 
 	for _, n := range nf.cluster.Nodes {
 		st := nf.nodeStatus(n).Kubelet
+		currentConfig := k8s.GenerateKubeletConfiguration(currentOpts, n.Address)
 		currentBuiltIn := k8s.KubeletServiceParams(n, currentOpts)
+		if st.Config != nil {
+			// CgroupDriver should be kept while node is running.
+			currentConfig.CgroupDriver = st.Config.CgroupDriver
+		}
 		switch {
 		case !st.Running:
 			// stopped nodes are excluded
@@ -520,13 +525,9 @@ func (nf *NodeFilter) KubeletOutdatedNodes() (nodes []*cke.Node) {
 			log.Warn("kubelet's container runtime cannot be changed", nil)
 		case cke.KubernetesImage.Name() != st.Image:
 			fallthrough
-		case currentOpts.Domain != st.Domain:
+		case st.Config == nil:
 			fallthrough
-		case currentOpts.AllowSwap != st.AllowSwap:
-			fallthrough
-		case currentOpts.ContainerLogMaxSize != st.ContainerLogMaxSize:
-			fallthrough
-		case currentOpts.ContainerLogMaxFiles != st.ContainerLogMaxFiles:
+		case reflect.DeepEqual(currentConfig, *st.Config):
 			fallthrough
 		case !kubeletEqualParams(st.BuiltInParams, currentBuiltIn):
 			fallthrough

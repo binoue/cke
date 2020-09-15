@@ -19,6 +19,7 @@ import (
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	schedulerv1 "k8s.io/kube-scheduler/config/v1"
+	kubeletv1beta1 "k8s.io/kubelet/config/v1beta1"
 	"sigs.k8s.io/yaml"
 )
 
@@ -141,8 +142,6 @@ func GetNodeStatus(ctx context.Context, inf cke.Infrastructure, node *cke.Node, 
 	status.Kubelet = cke.KubeletStatus{
 		ServiceStatus: ss[KubeletContainerName],
 		IsHealthy:     false,
-		Domain:        "",
-		AllowSwap:     false,
 	}
 	if status.Kubelet.Running {
 		status.Kubelet.IsHealthy, err = CheckKubeletHealthz(ctx, inf, node.Address, 10248)
@@ -155,18 +154,10 @@ func GetNodeStatus(ctx context.Context, inf cke.Infrastructure, node *cke.Node, 
 
 		cfgData, _, err := agent.Run("cat /etc/kubernetes/kubelet/config.yml")
 		if err == nil {
-			v := struct {
-				ClusterDomain        string `json:"clusterDomain"`
-				FailSwapOn           bool   `json:"failSwapOn"`
-				ContainerLogMaxSize  string `json:"containerLogMaxSize"`
-				ContainerLogMaxFiles int32  `json:"containerLogMaxFiles"`
-			}{}
+			var v kubeletv1beta1.KubeletConfiguration
 			err = yaml.Unmarshal(cfgData, &v)
 			if err == nil {
-				status.Kubelet.Domain = v.ClusterDomain
-				status.Kubelet.AllowSwap = !v.FailSwapOn
-				status.Kubelet.ContainerLogMaxSize = v.ContainerLogMaxSize
-				status.Kubelet.ContainerLogMaxFiles = v.ContainerLogMaxFiles
+				status.Kubelet.Config = &v
 			}
 		}
 	}

@@ -135,20 +135,21 @@ Options
 
 ### KubeletParams
 
-| Name                         | Required | Type        | Description                                                                                                                                                         |
-| ---------------------------- | -------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `domain`                     | false    | string      | The base domain for the cluster.  Default: `cluster.local`.                                                                                                         |
-| `allow_swap`                 | false    | bool        | Do not fail even when swap is on.                                                                                                                                   |
-| `boot_taints`                | false    | `[]Taint`   | Bootstrap node taints.                                                                                                                                              |
-| `extra_args`                 | false    | array       | Extra command-line arguments.  List of strings.                                                                                                                     |
-| `extra_binds`                | false    | array       | Extra bind mounts.  List of `Mount`.                                                                                                                                |
-| `extra_env`                  | false    | object      | Extra environment variables.                                                                                                                                        |
-| `cgroup_driver`              | false    | string      | Driver that the kubelet uses to manipulate cgroups on the host. `cgroupfs` (default) or `systemd`.                                                                  |
-| `container_runtime`          | false    | string      | Container runtime for Pod. Default: `docker`. You have to choose `docker` or `remote` which supports [CRI][].                                                       |
-| `container_runtime_endpoint` | false    | string      | Path of the runtime socket. It is required when `container_runtime` is `remote`. Default: `/var/run/dockershim.sock`.                                               |
-| `container_log_max_size`     | false    | string      | Equivalent to the [log rotation for CRI runtime]. Size of log file size. If the file size becomes bigger than given size, the log file is rotated. Default: `10Mi`. |
-| `container_log_max_files`    | false    | int         | Equivalent to the [log rotation for CRI runtime]. Number of rotated log files for keeping in the storage. Default: `5`.                                             |
-| `cni_conf_file`              | false    | CNIConfFile | CNI configuration file.                                                                                                                                             |
+| Name                         | Required | Type                          | Description                                                                                                                                                         |
+| ---------------------------- | -------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain`                     | false    | string                        | The base domain for the cluster.  Default: `cluster.local`.                                                                                                         |
+| `allow_swap`                 | false    | bool                          | Do not fail even when swap is on.                                                                                                                                   |
+| `boot_taints`                | false    | `[]Taint`                     | Bootstrap node taints.                                                                                                                                              |
+| `extra_args`                 | false    | array                         | Extra command-line arguments.  List of strings.                                                                                                                     |
+| `extra_binds`                | false    | array                         | Extra bind mounts.  List of `Mount`.                                                                                                                                |
+| `extra_env`                  | false    | object                        | Extra environment variables.                                                                                                                                        |
+| `cgroup_driver`              | false    | string                        | Driver that the kubelet uses to manipulate cgroups on the host. `cgroupfs` (default) or `systemd`.                                                                  |
+| `container_runtime`          | false    | string                        | Container runtime for Pod. Default: `docker`. You have to choose `docker` or `remote` which supports [CRI][].                                                       |
+| `container_runtime_endpoint` | false    | string                        | Path of the runtime socket. It is required when `container_runtime` is `remote`. Default: `/var/run/dockershim.sock`.                                               |
+| `container_log_max_size`     | false    | string                        | Equivalent to the [log rotation for CRI runtime]. Size of log file size. If the file size becomes bigger than given size, the log file is rotated. Default: `10Mi`. |
+| `container_log_max_files`    | false    | int                           | Equivalent to the [log rotation for CRI runtime]. Number of rotated log files for keeping in the storage. Default: `5`.                                             |
+| `cni_conf_file`              | false    | CNIConfFile                   | CNI configuration file.                                                                                                                                             |
+| `config_v1beta1`             | false    | *v1beta1.KubeletConfiguration | https://pkg.go.dev/k8s.io/kubelet/config/v1beta1?tab=doc#KubeletConfiguration                                                                                       |
 
 Taints in `boot_taints` are added to a Node in the following cases:
 (1) when that Node is registered with Kubernetes by kubelet, or
@@ -160,6 +161,8 @@ If you want to add taints only at Node registration, use kubelet's `--register-w
 CNI configuration file specified by `cni_conf_file` will be put in `/etc/cni/net.d` directory
 on all nodes.  The file is created only when `kubelet` starts on the node; it will *not* be
 updated later on.
+
+If `config_v1beta1` is specified, the following fields are used as its default values: `domain`, `allow_swap`, `container_log_max_size`, `container_log_max_files`.
 
 ### SchedulerParams
 

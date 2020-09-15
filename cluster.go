@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	schedulerv1 "k8s.io/kube-scheduler/config/v1"
+	kubeletv1beta1 "k8s.io/kubelet/config/v1beta1"
 	"sigs.k8s.io/yaml"
 )
 
@@ -127,15 +128,16 @@ type SchedulerParams struct {
 // KubeletParams is a set of extra parameters for kubelet.
 type KubeletParams struct {
 	ServiceParams            `json:",inline"`
-	CgroupDriver             string         `json:"cgroup_driver,omitempty"`
-	ContainerRuntime         string         `json:"container_runtime"`
-	ContainerRuntimeEndpoint string         `json:"container_runtime_endpoint"`
-	ContainerLogMaxSize      string         `json:"container_log_max_size"`
-	ContainerLogMaxFiles     int32          `json:"container_log_max_files"`
-	Domain                   string         `json:"domain"`
-	AllowSwap                bool           `json:"allow_swap"`
-	BootTaints               []corev1.Taint `json:"boot_taints"`
-	CNIConfFile              CNIConfFile    `json:"cni_conf_file"`
+	CgroupDriver             string                               `json:"cgroup_driver,omitempty"`
+	ContainerRuntime         string                               `json:"container_runtime"`
+	ContainerRuntimeEndpoint string                               `json:"container_runtime_endpoint"`
+	ContainerLogMaxSize      string                               `json:"container_log_max_size"`
+	ContainerLogMaxFiles     int32                                `json:"container_log_max_files"`
+	Domain                   string                               `json:"domain"`
+	AllowSwap                bool                                 `json:"allow_swap"`
+	BootTaints               []corev1.Taint                       `json:"boot_taints"`
+	CNIConfFile              CNIConfFile                          `json:"cni_conf_file"`
+	ConfigV1Beta1            *kubeletv1beta1.KubeletConfiguration `json:"config_v1beta1,omitempty"`
 }
 
 // EtcdBackup is a set of configurations for etcdbackup.
@@ -385,6 +387,15 @@ func validateOptions(opts Options) error {
 	}
 
 	fldPath := field.NewPath("options", "kubelet")
+	if opts.Kubelet.ConfigV1Beta1 != nil {
+		if len(opts.Kubelet.ConfigV1Beta1.ClusterDomain) > 0 {
+			msgs := validation.IsDNS1123Subdomain(opts.Kubelet.ConfigV1Beta1.ClusterDomain)
+			if len(msgs) > 0 {
+				return field.Invalid(fldPath.Child("domain"),
+					opts.Kubelet.ConfigV1Beta1.ClusterDomain, strings.Join(msgs, ";"))
+			}
+		}
+	}
 	if len(opts.Kubelet.Domain) > 0 {
 		msgs := validation.IsDNS1123Subdomain(opts.Kubelet.Domain)
 		if len(msgs) > 0 {
