@@ -162,7 +162,13 @@ CNI configuration file specified by `cni_conf_file` will be put in `/etc/cni/net
 on all nodes.  The file is created only when `kubelet` starts on the node; it will *not* be
 updated later on.
 
-If `config_v1beta1` is specified, the following fields are used as its default values: `domain`, `allow_swap`, `container_log_max_size`, `container_log_max_files`.
+If `config_v1beta1` is specified, the following fields are used as its default values: `allow_swap`, `container_log_max_size`, `container_log_max_files`.
+`config_v1beta1.clusterDomain` is automatically filled with the value of `domain`, whether `domain` is specified or not.
+If you specify `config_v1beta1.clusterDomain`, it must have the same value with `domain`.
+
+#### known issue
+
+`cgroup_driver` should not be modified along with other kubelet parameters.
 
 ### SchedulerParams
 

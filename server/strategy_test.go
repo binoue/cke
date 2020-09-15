@@ -3,6 +3,7 @@ package server
 import (
 	"sort"
 	"testing"
+	"time"
 
 	"github.com/coreos/etcd/etcdserver/etcdserverpb"
 	"github.com/cybozu-go/cke"
@@ -17,6 +18,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	schedulerv1 "k8s.io/kube-scheduler/config/v1"
+	kubeletv1beta1 "k8s.io/kubelet/config/v1beta1"
 )
 
 const (
@@ -266,14 +268,34 @@ func (d testData) withKubelet(domain, dns string, allowSwap bool) testData {
 		st.Running = true
 		st.IsHealthy = true
 		st.Image = cke.KubernetesImage.Name()
-		st.ContainerLogMaxSize = "10Mi"
-		st.ContainerLogMaxFiles = 10
 		st.BuiltInParams = k8s.KubeletServiceParams(n, cke.KubeletParams{
 			ContainerRuntime:         "remote",
 			ContainerRuntimeEndpoint: "/var/run/k8s-containerd.sock",
 		})
-		st.Domain = domain
-		st.AllowSwap = allowSwap
+
+		var oomScoreAdj int32 = -1000
+		failSwapOn := !allowSwap
+		var containerLogMaxFiles int32 = 10
+		webhookEnabled := true
+		st.Config = &kubeletv1beta1.KubeletConfiguration{
+			ReadOnlyPort:          0,
+			HealthzBindAddress:    "0.0.0.0",
+			OOMScoreAdj:           &oomScoreAdj,
+			ClusterDomain:         domain,
+			RuntimeRequestTimeout: metav1.Duration{Duration: 15 * time.Minute},
+			FailSwapOn:            &failSwapOn,
+			CgroupDriver:          "",
+			ContainerLogMaxSize:   "10Mi",
+			ContainerLogMaxFiles:  &containerLogMaxFiles,
+			TLSCertFile:           "/etc/kubernetes/pki/kubelet.crt",
+			TLSPrivateKeyFile:     "/etc/kubernetes/pki/kubelet.key",
+			Authentication: kubeletv1beta1.KubeletAuthentication{
+				X509:    kubeletv1beta1.KubeletX509Authentication{ClientCAFile: "/etc/kubernetes/pki/ca.crt"},
+				Webhook: kubeletv1beta1.KubeletWebhookAuthentication{Enabled: &webhookEnabled},
+			},
+			Authorization: kubeletv1beta1.KubeletAuthorization{Mode: kubeletv1beta1.KubeletAuthorizationModeWebhook},
+			ClusterDNS:    []string{n.Address},
+		}
 	}
 	return d
 }
@@ -821,8 +843,8 @@ func TestDecideOps(t *testing.T) {
 		{
 			Name: "RestartKubelet5",
 			Input: newData().withAllServices().with(func(d testData) {
-				d.NodeStatus(d.Cluster.Nodes[3]).Kubelet.Domain = "neco.local"
-				d.NodeStatus(d.Cluster.Nodes[4]).Kubelet.Domain = "neco.local"
+				d.NodeStatus(d.Cluster.Nodes[3]).Kubelet.Config.ClusterDomain = "neco.local"
+				d.NodeStatus(d.Cluster.Nodes[4]).Kubelet.Config.ClusterDomain = "neco.local"
 			}).withSSHNotConnectedNodes(),
 			ExpectedOps: []string{
 				"kubelet-restart",
@@ -991,7 +1013,7 @@ func TestDecideOps(t *testing.T) {
 			Input: newData().withK8sResourceReady().with(func(d testData) {
 				d.Cluster.Options.Kubelet.Domain = "neco.local"
 				for _, st := range d.Status.NodeStatuses {
-					st.Kubelet.Domain = "neco.local"
+					st.Kubelet.Config.ClusterDomain = "neco.local"
 				}
 			}),
 			ExpectedOps: []string{

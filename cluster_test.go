@@ -6,6 +6,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	kubeletv1beta1 "k8s.io/kubelet/config/v1beta1"
 	"sigs.k8s.io/yaml"
 )
 
@@ -315,6 +316,22 @@ rules:
 				},
 			},
 			false,
+		},
+		{
+			"inconsistent domains",
+			Cluster{
+				Name:          "testcluster",
+				ServiceSubnet: "10.0.0.0/14",
+				Options: Options{
+					Kubelet: KubeletParams{
+						Domain: "foo.local",
+						ConfigV1Beta1: &kubeletv1beta1.KubeletConfiguration{
+							ClusterDomain: "bar.local",
+						},
+					},
+				},
+			},
+			true,
 		},
 		{
 			"invalid domain",

@@ -527,7 +527,7 @@ func (nf *NodeFilter) KubeletOutdatedNodes() (nodes []*cke.Node) {
 			fallthrough
 		case st.Config == nil:
 			fallthrough
-		case reflect.DeepEqual(currentConfig, *st.Config):
+		case !reflect.DeepEqual(currentConfig, *st.Config):
 			fallthrough
 		case !kubeletEqualParams(st.BuiltInParams, currentBuiltIn):
 			fallthrough

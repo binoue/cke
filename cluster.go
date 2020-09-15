@@ -389,10 +389,8 @@ func validateOptions(opts Options) error {
 	fldPath := field.NewPath("options", "kubelet")
 	if opts.Kubelet.ConfigV1Beta1 != nil {
 		if len(opts.Kubelet.ConfigV1Beta1.ClusterDomain) > 0 {
-			msgs := validation.IsDNS1123Subdomain(opts.Kubelet.ConfigV1Beta1.ClusterDomain)
-			if len(msgs) > 0 {
-				return field.Invalid(fldPath.Child("domain"),
-					opts.Kubelet.ConfigV1Beta1.ClusterDomain, strings.Join(msgs, ";"))
+			if opts.Kubelet.ConfigV1Beta1.ClusterDomain != opts.Kubelet.Domain {
+				return errors.New("kubelet.config_v1beta1.clusterDomain should be equal to kubelet.doamin")
 			}
 		}
 	}
