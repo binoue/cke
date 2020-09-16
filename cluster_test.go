@@ -1,6 +1,7 @@
 package cke
 
 import (
+	"io/ioutil"
 	"reflect"
 	"testing"
 
@@ -13,80 +14,13 @@ import (
 func testClusterYAML(t *testing.T) {
 	t.Parallel()
 
-	y := `
-name: test
-nodes:
-  - address: 1.2.3.4
-    hostname: host1
-    user: cybozu
-    control_plane: true
-    labels:
-      label1: value1
-service_subnet: 12.34.56.00/24
-dns_servers: ["1.1.1.1", "8.8.8.8"]
-dns_service: kube-system/dns
-etcd_backup:
-  enabled: true
-  pvc_name: etcdbackup-pvc
-  schedule: "*/1 * * * *"
-options:
-  etcd:
-    volume_name: myetcd
-    extra_args:
-      - arg1
-      - arg2
-  kube-api:
-    extra_binds:
-      - source: src1
-        destination: target1
-        read_only: true
-        propagation: shared
-        selinux_label: z
-    audit_log_enabled: true
-    audit_log_policy: |
-      apiVersion: audit.k8s.io/v1
-      kind: Policy
-      rules:
-      - level: Metadata
-  kube-controller-manager:
-    extra_env:
-      env1: val1
-  kube-scheduler:
-    extenders:
-      - "urlPrefix: http://127.0.0.1:8000"
-    predicates:
-      - "name: some_predicate"
-    priorities:
-      - "name: some_priority"
-    extra_args:
-      - arg1
-  kube-proxy:
-    extra_args:
-      - arg1
-  kubelet:
-    domain: my.domain
-    allow_swap: true
-    cgroup_driver: systemd
-    container_runtime: remote
-    container_runtime_endpoint: /var/run/k8s-containerd.sock
-    container_log_max_size: 10Mi
-    container_log_max_files: 10
-    boot_taints:
-      - key: taint1
-        value: tainted
-        effect: NoExecute
-    extra_args:
-      - arg1
-    cni_conf_file:
-      name: 99-loopback.conf
-      content: |
-        {
-            "cniVersion": "0.3.1",
-            "type": "loopback"
-        }
-`
+	b, err := ioutil.ReadFile("cluster_test.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	c := new(Cluster)
-	err := yaml.Unmarshal([]byte(y), c)
+	err = yaml.Unmarshal(b, c)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,6 +134,21 @@ rules:
 	}
 	if len(c.Options.Kubelet.CNIConfFile.Content) == 0 {
 		t.Error(`len(c.Options.Kubelet.CNIConfFile.Content) == 0`)
+	}
+	if c.Options.Kubelet.ConfigV1Beta1 == nil {
+		t.Fatal(`c.Options.Kubelet.ConfigV1Beta1 == nil`)
+	}
+	if c.Options.Kubelet.ConfigV1Beta1.APIVersion != "kubelet.config.k8s.io/v1beta1" {
+		t.Error(`c.Options.Kubelet.ConfigV1Beta1.APIVersion != "kubelet.config.k8s.io/v1beta1"`)
+	}
+	if c.Options.Kubelet.ConfigV1Beta1.Kind != "KubeletConfiguration" {
+		t.Error(`c.Options.Kubelet.ConfigV1Beta1.Kind != "KubeletConfiguration"`)
+	}
+	if c.Options.Kubelet.ConfigV1Beta1.ContainerLogMaxFiles == nil {
+		t.Fatal(`c.Options.Kubelet.ConfigV1Beta1.ContainerLogMaxFiles == nil`)
+	}
+	if *c.Options.Kubelet.ConfigV1Beta1.ContainerLogMaxFiles != 10 {
+		t.Error(`*c.Options.Kubelet.ConfigV1Beta1.ContainerLogMaxFiles != 10`)
 	}
 }
 
