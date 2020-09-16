@@ -10,6 +10,7 @@ import (
 	"github.com/cybozu-go/cke/op/etcd"
 	"github.com/cybozu-go/cke/op/k8s"
 	"github.com/cybozu-go/log"
+	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	schedulerv1 "k8s.io/kube-scheduler/config/v1"
 	"sigs.k8s.io/yaml"
@@ -517,6 +518,10 @@ func (nf *NodeFilter) KubeletOutdatedNodes() (nodes []*cke.Node) {
 		if st.Config != nil {
 			// CgroupDriver should be kept while node is running.
 			currentConfig.CgroupDriver = st.Config.CgroupDriver
+
+			// APIVersion and Kind should be ignored
+			currentConfig.APIVersion = st.Config.APIVersion
+			currentConfig.Kind = st.Config.Kind
 		}
 		switch {
 		case !st.Running:
@@ -527,7 +532,11 @@ func (nf *NodeFilter) KubeletOutdatedNodes() (nodes []*cke.Node) {
 			fallthrough
 		case st.Config == nil:
 			fallthrough
-		case !reflect.DeepEqual(currentConfig, *st.Config):
+		case !reflect.DeepEqual(&currentConfig, st.Config):
+			log.Debug("kubelet restarting because", map[string]interface{}{
+				"config": currentConfig,
+				"diff":   cmp.Diff(currentConfig, *st.Config),
+			})
 			fallthrough
 		case !kubeletEqualParams(st.BuiltInParams, currentBuiltIn):
 			fallthrough

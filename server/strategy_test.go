@@ -17,6 +17,7 @@ import (
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	schedulerv1 "k8s.io/kube-scheduler/config/v1"
 	kubeletv1beta1 "k8s.io/kubelet/config/v1beta1"
 )
@@ -106,15 +107,14 @@ func newData() testData {
 		ServiceSubnet: testServiceSubnet,
 		DNSServers:    testDefaultDNSServers,
 	}
+	kubeletConfig := &unstructured.Unstructured{}
+	kubeletConfig.SetGroupVersionKind(kubeletv1beta1.SchemeGroupVersion.WithKind("KubeletConfiguration"))
+	kubeletConfig.Object["containerLogMaxSize"] = "20Mi"
+	kubeletConfig.Object["clusterDomain"] = testDefaultDNSDomain
 	cluster.Options.Kubelet = cke.KubeletParams{
-		Domain:                   testDefaultDNSDomain,
 		ContainerRuntime:         "remote",
 		ContainerRuntimeEndpoint: "/var/run/k8s-containerd.sock",
-		ContainerLogMaxFiles:     10,
-		ContainerLogMaxSize:      "10Mi",
-		ConfigV1Beta1: &kubeletv1beta1.KubeletConfiguration{
-			ContainerLogMaxSize: "10Mi",
-		},
+		Config:                   kubeletConfig,
 	}
 
 	nodeReadyStatus := corev1.NodeStatus{
@@ -277,19 +277,17 @@ func (d testData) withKubelet(domain, dns string, allowSwap bool) testData {
 		})
 
 		var oomScoreAdj int32 = -1000
-		failSwapOn := !allowSwap
-		var containerLogMaxFiles int32 = 10
 		webhookEnabled := true
 		st.Config = &kubeletv1beta1.KubeletConfiguration{
-			ReadOnlyPort:          0,
-			HealthzBindAddress:    "0.0.0.0",
-			OOMScoreAdj:           &oomScoreAdj,
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "kubelet.config.k8s.io/v1beta1",
+				Kind:       "KubeletConfiguration",
+			},
 			ClusterDomain:         domain,
 			RuntimeRequestTimeout: metav1.Duration{Duration: 15 * time.Minute},
-			FailSwapOn:            &failSwapOn,
-			CgroupDriver:          "",
-			ContainerLogMaxSize:   "10Mi",
-			ContainerLogMaxFiles:  &containerLogMaxFiles,
+			HealthzBindAddress:    "0.0.0.0",
+			OOMScoreAdj:           &oomScoreAdj,
+			ContainerLogMaxSize:   "20Mi",
 			TLSCertFile:           "/etc/kubernetes/pki/kubelet.crt",
 			TLSPrivateKeyFile:     "/etc/kubernetes/pki/kubelet.key",
 			Authentication: kubeletv1beta1.KubeletAuthentication{
@@ -298,6 +296,10 @@ func (d testData) withKubelet(domain, dns string, allowSwap bool) testData {
 			},
 			Authorization: kubeletv1beta1.KubeletAuthorization{Mode: kubeletv1beta1.KubeletAuthorizationModeWebhook},
 			ClusterDNS:    []string{n.Address},
+		}
+		if allowSwap {
+			failSwapOn := !allowSwap
+			st.Config.FailSwapOn = &failSwapOn
 		}
 	}
 	return d
@@ -859,7 +861,7 @@ func TestDecideOps(t *testing.T) {
 		{
 			Name: "RestartKubelet6",
 			Input: newData().withAllServices().with(func(d testData) {
-				d.Cluster.Options.Kubelet.ContainerLogMaxFiles = 20
+				d.Cluster.Options.Kubelet.Config.Object["containerLogMaxFiles"] = 20
 			}).withSSHNotConnectedNodes(),
 			ExpectedOps: []string{
 				"kubelet-restart",
@@ -871,7 +873,7 @@ func TestDecideOps(t *testing.T) {
 		{
 			Name: "RestartKubelet7",
 			Input: newData().withAllServices().with(func(d testData) {
-				d.Cluster.Options.Kubelet.ConfigV1Beta1.ContainerLogMaxSize = "1Gi"
+				d.Cluster.Options.Kubelet.Config.Object["containerLogMaxSize"] = "1Gi"
 			}).withSSHNotConnectedNodes(),
 			ExpectedOps: []string{
 				"kubelet-restart",
@@ -1005,7 +1007,7 @@ func TestDecideOps(t *testing.T) {
 		{
 			Name: "DNSUpdate1",
 			Input: newData().withK8sResourceReady().with(func(d testData) {
-				d.Cluster.Options.Kubelet.Domain = "neco.local"
+				d.Cluster.Options.Kubelet.Config.Object["clusterDomain"] = "neco.local"
 			}),
 			ExpectedOps: []string{
 				"kubelet-restart",
@@ -1014,7 +1016,7 @@ func TestDecideOps(t *testing.T) {
 		{
 			Name: "DNSUpdate2",
 			Input: newData().withK8sResourceReady().with(func(d testData) {
-				d.Cluster.Options.Kubelet.Domain = "neco.local"
+				d.Cluster.Options.Kubelet.Config.Object["clusterDomain"] = "neco.local"
 				for _, st := range d.Status.NodeStatuses {
 					st.Kubelet.Config.ClusterDomain = "neco.local"
 				}

@@ -8,6 +8,7 @@ import (
 	"github.com/cybozu-go/cke"
 	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	kubeletv1beta1 "k8s.io/kubelet/config/v1beta1"
 )
 
@@ -19,7 +20,6 @@ func TestGenerateKubeletConfiguration(t *testing.T) {
 		HealthzBindAddress:    "0.0.0.0",
 		OOMScoreAdj:           int32Pointer(-1000),
 		FailSwapOn:            boolPointer(true),
-		ContainerLogMaxFiles:  int32Pointer(0),
 		RuntimeRequestTimeout: metav1.Duration{Duration: 15 * time.Minute},
 		TLSCertFile:           "/etc/kubernetes/pki/kubelet.crt",
 		TLSPrivateKeyFile:     "/etc/kubernetes/pki/kubelet.key",
@@ -41,8 +41,14 @@ func TestGenerateKubeletConfiguration(t *testing.T) {
 	expected1.ContainerLogMaxFiles = int32Pointer(10)
 
 	expected2 := baseExpected.DeepCopy()
-	expected2.CgroupDriver = "systemd"
+	expected2.FailSwapOn = nil
 	expected2.ContainerLogMaxSize = "100Mi"
+	expected2.APIVersion = "kubelet.config.k8s.io/v1beta1"
+	expected2.Kind = "KubeletConfiguration"
+
+	cfg := &unstructured.Unstructured{}
+	cfg.SetGroupVersionKind(kubeletv1beta1.SchemeGroupVersion.WithKind("KubeletConfiguration"))
+	cfg.Object["containerLogMaxSize"] = "100Mi"
 
 	cases := []struct {
 		Name     string
@@ -50,12 +56,12 @@ func TestGenerateKubeletConfiguration(t *testing.T) {
 		Expected kubeletv1beta1.KubeletConfiguration
 	}{
 		{
-			Name:     "no config",
+			Name:     "base",
 			Input:    cke.KubeletParams{},
 			Expected: baseExpected,
 		},
 		{
-			Name: "no config_v1beta1",
+			Name: "no config",
 			Input: cke.KubeletParams{
 				AllowSwap:            true,
 				Domain:               "foo.local",
@@ -66,13 +72,11 @@ func TestGenerateKubeletConfiguration(t *testing.T) {
 			Expected: *expected1,
 		},
 		{
-			Name: "with config_v1beta1",
+			Name: "with config",
 			Input: cke.KubeletParams{
 				CgroupDriver:        "systemd",
 				ContainerLogMaxSize: "5Mi",
-				ConfigV1Beta1: &kubeletv1beta1.KubeletConfiguration{
-					ContainerLogMaxSize: "100Mi",
-				},
+				Config:              cfg,
 			},
 			Expected: *expected2,
 		},

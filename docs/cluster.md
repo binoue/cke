@@ -149,7 +149,7 @@ Options
 | `container_log_max_size`     | false    | string                        | Equivalent to the [log rotation for CRI runtime]. Size of log file size. If the file size becomes bigger than given size, the log file is rotated. Default: `10Mi`. |
 | `container_log_max_files`    | false    | int                           | Equivalent to the [log rotation for CRI runtime]. Number of rotated log files for keeping in the storage. Default: `5`.                                             |
 | `cni_conf_file`              | false    | CNIConfFile                   | CNI configuration file.                                                                                                                                             |
-| `config_v1beta1`             | false    | *v1beta1.KubeletConfiguration | https://pkg.go.dev/k8s.io/kubelet/config/v1beta1?tab=doc#KubeletConfiguration                                                                                       |
+| `config`                     | false    | *v1beta1.KubeletConfiguration | https://pkg.go.dev/k8s.io/kubelet/config/v1beta1?tab=doc#KubeletConfiguration                                                                                       |
 
 Taints in `boot_taints` are added to a Node in the following cases:
 (1) when that Node is registered with Kubernetes by kubelet, or
@@ -162,11 +162,9 @@ CNI configuration file specified by `cni_conf_file` will be put in `/etc/cni/net
 on all nodes.  The file is created only when `kubelet` starts on the node; it will *not* be
 updated later on.
 
-If `config_v1beta1` is specified, the following fields are used as its default values: `allow_swap`, `container_log_max_size`, `container_log_max_files`.
-`config_v1beta1.clusterDomain` is automatically filled with the value of `domain`, whether `domain` is specified or not.
-If you specify `config_v1beta1.clusterDomain`, it must have the same value with `domain`.
+If `config` is specified, the following fields are ignored: `domain`, `allow_swap`, `container_log_max_size`, `container_log_max_files`.
 
-Some fields in `config_v1beta1` have CKE-defined default values.
+Some fields in `config` have CKE-defined default values.
 Some other fields are forced to have certain values.
 Please see the source code for more details.
 

@@ -2,7 +2,6 @@ package k8s
 
 import (
 	"bytes"
-	"encoding/json"
 	"time"
 
 	"github.com/cybozu-go/cke"
@@ -80,32 +79,16 @@ func kubeletKubeconfig(cluster string, n *cke.Node, caPath, certPath, keyPath st
 
 func newKubeletConfiguration(cert, key, ca string, params cke.KubeletParams) kubeletv1beta1.KubeletConfiguration {
 	// default values
-	c := kubeletv1beta1.KubeletConfiguration{
-		ReadOnlyPort:         0,
-		HealthzBindAddress:   "0.0.0.0",
-		OOMScoreAdj:          int32Pointer(-1000),
-		ClusterDomain:        params.Domain,
-		FailSwapOn:           boolPointer(!params.AllowSwap),
-		CgroupDriver:         params.CgroupDriver,
-		ContainerLogMaxSize:  params.ContainerLogMaxSize,
-		ContainerLogMaxFiles: int32Pointer(params.ContainerLogMaxFiles),
+	base := &kubeletv1beta1.KubeletConfiguration{
+		RuntimeRequestTimeout: metav1.Duration{Duration: 15 * time.Minute},
+		HealthzBindAddress:    "0.0.0.0",
+		OOMScoreAdj:           int32Pointer(-1000),
 	}
 
-	if params.ConfigV1Beta1 != nil {
-		b, err := json.Marshal(params.ConfigV1Beta1)
-		if err != nil {
-			panic(err)
-		}
-		err = json.Unmarshal(b, &c)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	// additional defaulting; metav1.Duration's "omitempty" does not work in Marshal()
-	zeroDuration := metav1.Duration{}
-	if c.RuntimeRequestTimeout == zeroDuration {
-		c.RuntimeRequestTimeout = metav1.Duration{Duration: 15 * time.Minute}
+	// This won't raise an error because of prior validation
+	c, err := params.GetConfigV1Beta1(base)
+	if err != nil {
+		panic(err)
 	}
 
 	// forced values
@@ -117,7 +100,7 @@ func newKubeletConfiguration(cert, key, ca string, params cke.KubeletParams) kub
 	}
 	c.Authorization = kubeletv1beta1.KubeletAuthorization{Mode: kubeletv1beta1.KubeletAuthorizationModeWebhook}
 
-	return c
+	return *c
 }
 
 // GenerateKubeletConfiguration generates kubelet configuration.

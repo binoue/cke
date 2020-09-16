@@ -135,20 +135,21 @@ rules:
 	if len(c.Options.Kubelet.CNIConfFile.Content) == 0 {
 		t.Error(`len(c.Options.Kubelet.CNIConfFile.Content) == 0`)
 	}
-	if c.Options.Kubelet.ConfigV1Beta1 == nil {
-		t.Fatal(`c.Options.Kubelet.ConfigV1Beta1 == nil`)
+	base := &kubeletv1beta1.KubeletConfiguration{
+		ClusterDomain: "hoge.com",
 	}
-	if c.Options.Kubelet.ConfigV1Beta1.APIVersion != "kubelet.config.k8s.io/v1beta1" {
-		t.Error(`c.Options.Kubelet.ConfigV1Beta1.APIVersion != "kubelet.config.k8s.io/v1beta1"`)
+	kubeletConfig, err := c.Options.Kubelet.GetConfigV1Beta1(base)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if c.Options.Kubelet.ConfigV1Beta1.Kind != "KubeletConfiguration" {
-		t.Error(`c.Options.Kubelet.ConfigV1Beta1.Kind != "KubeletConfiguration"`)
+	if kubeletConfig.ContainerLogMaxFiles == nil {
+		t.Fatal(`kubeletConfig.ContainerLogMaxFiles == nil`)
 	}
-	if c.Options.Kubelet.ConfigV1Beta1.ContainerLogMaxFiles == nil {
-		t.Fatal(`c.Options.Kubelet.ConfigV1Beta1.ContainerLogMaxFiles == nil`)
+	if *kubeletConfig.ContainerLogMaxFiles != 10 {
+		t.Error(`*kubeletConfig.ContainerLogMaxFiles != 10`)
 	}
-	if *c.Options.Kubelet.ConfigV1Beta1.ContainerLogMaxFiles != 10 {
-		t.Error(`*c.Options.Kubelet.ConfigV1Beta1.ContainerLogMaxFiles != 10`)
+	if kubeletConfig.ClusterDomain != "hoge.com" {
+		t.Error(`kubeletConfig.ClusterDomain != "hoge.com"`)
 	}
 }
 
@@ -265,22 +266,6 @@ rules:
 				},
 			},
 			false,
-		},
-		{
-			"inconsistent domains",
-			Cluster{
-				Name:          "testcluster",
-				ServiceSubnet: "10.0.0.0/14",
-				Options: Options{
-					Kubelet: KubeletParams{
-						Domain: "foo.local",
-						ConfigV1Beta1: &kubeletv1beta1.KubeletConfiguration{
-							ClusterDomain: "bar.local",
-						},
-					},
-				},
-			},
-			true,
 		},
 		{
 			"invalid domain",
