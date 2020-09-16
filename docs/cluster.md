@@ -166,6 +166,10 @@ If `config_v1beta1` is specified, the following fields are used as its default v
 `config_v1beta1.clusterDomain` is automatically filled with the value of `domain`, whether `domain` is specified or not.
 If you specify `config_v1beta1.clusterDomain`, it must have the same value with `domain`.
 
+Some fields in `config_v1beta1` have CKE-defined default values.
+Some other fields are forced to have certain values.
+Please see the source code for more details.
+
 #### known issue
 
 `cgroup_driver` should not be modified along with other kubelet parameters.

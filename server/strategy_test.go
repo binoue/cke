@@ -112,6 +112,9 @@ func newData() testData {
 		ContainerRuntimeEndpoint: "/var/run/k8s-containerd.sock",
 		ContainerLogMaxFiles:     10,
 		ContainerLogMaxSize:      "10Mi",
+		ConfigV1Beta1: &kubeletv1beta1.KubeletConfiguration{
+			ContainerLogMaxSize: "10Mi",
+		},
 	}
 
 	nodeReadyStatus := corev1.NodeStatus{
@@ -868,7 +871,7 @@ func TestDecideOps(t *testing.T) {
 		{
 			Name: "RestartKubelet7",
 			Input: newData().withAllServices().with(func(d testData) {
-				d.Cluster.Options.Kubelet.ContainerLogMaxSize = "1Gi"
+				d.Cluster.Options.Kubelet.ConfigV1Beta1.ContainerLogMaxSize = "1Gi"
 			}).withSSHNotConnectedNodes(),
 			ExpectedOps: []string{
 				"kubelet-restart",

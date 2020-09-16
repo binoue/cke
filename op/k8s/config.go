@@ -79,16 +79,16 @@ func kubeletKubeconfig(cluster string, n *cke.Node, caPath, certPath, keyPath st
 }
 
 func newKubeletConfiguration(cert, key, ca string, params cke.KubeletParams) kubeletv1beta1.KubeletConfiguration {
+	// default values
 	c := kubeletv1beta1.KubeletConfiguration{
-		ReadOnlyPort:          0,
-		HealthzBindAddress:    "0.0.0.0",
-		OOMScoreAdj:           int32Pointer(-1000),
-		ClusterDomain:         params.Domain,
-		RuntimeRequestTimeout: metav1.Duration{Duration: 15 * time.Minute},
-		FailSwapOn:            boolPointer(!params.AllowSwap),
-		CgroupDriver:          params.CgroupDriver,
-		ContainerLogMaxSize:   params.ContainerLogMaxSize,
-		ContainerLogMaxFiles:  int32Pointer(params.ContainerLogMaxFiles),
+		ReadOnlyPort:         0,
+		HealthzBindAddress:   "0.0.0.0",
+		OOMScoreAdj:          int32Pointer(-1000),
+		ClusterDomain:        params.Domain,
+		FailSwapOn:           boolPointer(!params.AllowSwap),
+		CgroupDriver:         params.CgroupDriver,
+		ContainerLogMaxSize:  params.ContainerLogMaxSize,
+		ContainerLogMaxFiles: int32Pointer(params.ContainerLogMaxFiles),
 	}
 
 	if params.ConfigV1Beta1 != nil {
@@ -102,6 +102,13 @@ func newKubeletConfiguration(cert, key, ca string, params cke.KubeletParams) kub
 		}
 	}
 
+	// additional defaulting; metav1.Duration's "omitempty" does not work in Marshal()
+	zeroDuration := metav1.Duration{}
+	if c.RuntimeRequestTimeout == zeroDuration {
+		c.RuntimeRequestTimeout = metav1.Duration{Duration: 15 * time.Minute}
+	}
+
+	// forced values
 	c.TLSCertFile = cert
 	c.TLSPrivateKeyFile = key
 	c.Authentication = kubeletv1beta1.KubeletAuthentication{
