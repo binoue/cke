@@ -8,7 +8,7 @@ This project employs a versioning scheme described in [RELEASE.md](RELEASE.md#ve
 ### Changed
 - Update images
   - etcd 3.3.25
-  - Kubernetes 1.18.8
+  - Kubernetes 1.18.9
   - CoreDNS 1.7.0
   - Unbound 1.11.0
 

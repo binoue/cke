@@ -21,9 +21,9 @@ GINKGO = env GOFLAGS=-mod=vendor $(GOPATH)/bin/ginkgo --failFast -v
 CURL = curl -fsL
 MANAGEMENT_ETCD_VERSION = 3.3.25
 VAULT_VERSION = 1.2.2
-K8S_VERSION = 1.18.8
+K8S_VERSION = 1.18.9
 PLACEMAT_DATADIR = /var/scratch/placemat
-CONTAINERD_VERSION = 1.4.0
+CONTAINERD_VERSION = 1.4.1
 CRITOOLS_VERSION = 1.18.0
 CT_VERSION = 0.9.0
 CT = /usr/local/bin/ct
