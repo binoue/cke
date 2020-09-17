@@ -83,15 +83,7 @@ rules:
 	if c.Options.ControllerManager.ExtraEnvvar["env1"] != "val1" {
 		t.Error(`c.Options.ControllerManager.ExtraEnvvar["env1"] != "val1"`)
 	}
-	if !reflect.DeepEqual(c.Options.Scheduler.Extenders, []string{"urlPrefix: http://127.0.0.1:8000"}) {
-		t.Error(`!reflect.DeepEqual(c.Options.Scheduler.Extenders, []string{"urlPrefix: http://127.0.0.1:8000"}`)
-	}
-	if !reflect.DeepEqual(c.Options.Scheduler.Predicates, []string{"name: some_predicate"}) {
-		t.Error(`!reflect.DeepEqual(c.Options.Scheduler.Predicates, []string{"name: some_predicate"}`)
-	}
-	if !reflect.DeepEqual(c.Options.Scheduler.Priorities, []string{"name: some_priority"}) {
-		t.Error(`!reflect.DeepEqual(c.Options.Scheduler.Priorities, []string{"name: some_priority"}`)
-	}
+	//	TODO new scheduler test
 	if c.Options.Kubelet.Domain != "my.domain" {
 		t.Error(`c.Options.Kubelet.Domain != "my.domain"`)
 	}
@@ -165,6 +157,16 @@ func testClusterYAML117(t *testing.T) {
 	err = yaml.Unmarshal(b, c)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(c.Options.Scheduler.Extenders, []string{"urlPrefix: http://127.0.0.1:8000"}) {
+		t.Error(`!reflect.DeepEqual(c.Options.Scheduler.Extenders, []string{"urlPrefix: http://127.0.0.1:8000"}`)
+	}
+	if !reflect.DeepEqual(c.Options.Scheduler.Predicates, []string{"name: some_predicate"}) {
+		t.Error(`!reflect.DeepEqual(c.Options.Scheduler.Predicates, []string{"name: some_predicate"}`)
+	}
+	if !reflect.DeepEqual(c.Options.Scheduler.Priorities, []string{"name: some_priority"}) {
+		t.Error(`!reflect.DeepEqual(c.Options.Scheduler.Priorities, []string{"name: some_priority"}`)
 	}
 
 	base := &kubeletv1beta1.KubeletConfiguration{
