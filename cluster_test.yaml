@@ -54,7 +54,7 @@ options:
     container_runtime: remote
     container_runtime_endpoint: /var/run/k8s-containerd.sock
     container_log_max_size: 10Mi
-    container_log_max_files: 10
+    container_log_max_files: 5
     boot_taints:
       - key: taint1
         value: tainted

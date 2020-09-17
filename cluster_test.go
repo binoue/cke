@@ -110,8 +110,8 @@ rules:
 	if c.Options.Kubelet.ContainerLogMaxSize != "10Mi" {
 		t.Error(`c.Options.Kubelet.ContainerLogMaxSize != "10Mi"`)
 	}
-	if c.Options.Kubelet.ContainerLogMaxFiles != 10 {
-		t.Error(`c.Options.Kubelet.ContainerLogMaxFiles != 10`)
+	if c.Options.Kubelet.ContainerLogMaxFiles != 5 {
+		t.Error(`c.Options.Kubelet.ContainerLogMaxFiles != 5`)
 	}
 	if len(c.Options.Kubelet.BootTaints) != 1 {
 		t.Fatal(`len(c.Options.Kubelet.BootTaints) != 1`)
@@ -150,6 +150,36 @@ rules:
 	}
 	if kubeletConfig.ClusterDomain != "hoge.com" {
 		t.Error(`kubeletConfig.ClusterDomain != "hoge.com"`)
+	}
+}
+
+func testClusterYAML117(t *testing.T) {
+	t.Parallel()
+
+	b, err := ioutil.ReadFile("cluster_test_1.17.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	c := new(Cluster)
+	err = yaml.Unmarshal(b, c)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	base := &kubeletv1beta1.KubeletConfiguration{
+		ClusterDomain:       "hoge.com",
+		ContainerLogMaxSize: "5Mi",
+	}
+	kubeletConfig, err := c.Options.Kubelet.GetConfigV1Beta1(base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if kubeletConfig.ClusterDomain != "hoge.com" {
+		t.Error(`kubeletConfig.ClusterDomain != "hoge.com"`)
+	}
+	if kubeletConfig.ContainerLogMaxSize != "10Mi" {
+		t.Fatal(`kubeletConfig.ContainerLogMaxSize != "10Mi"`)
 	}
 }
 
@@ -722,6 +752,7 @@ func testNodename(t *testing.T) {
 
 func TestCluster(t *testing.T) {
 	t.Run("YAML", testClusterYAML)
+	t.Run("YAML117", testClusterYAML117)
 	t.Run("Validate", testClusterValidate)
 	t.Run("ValidateNode", testClusterValidateNode)
 	t.Run("Nodename", testNodename)

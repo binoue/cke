@@ -1,0 +1,4 @@
+name: test
+options:
+  kubelet:
+    container_log_max_size: 10Mi
