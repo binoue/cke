@@ -6,7 +6,9 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	schedulerv1alpha2 "k8s.io/kube-scheduler/config/v1alpha2"
 	kubeletv1beta1 "k8s.io/kubelet/config/v1beta1"
 	"sigs.k8s.io/yaml"
 )
@@ -83,7 +85,25 @@ rules:
 	if c.Options.ControllerManager.ExtraEnvvar["env1"] != "val1" {
 		t.Error(`c.Options.ControllerManager.ExtraEnvvar["env1"] != "val1"`)
 	}
-	//	TODO new scheduler test
+	kubeSchedulerHealthz := "0.0.0.0"
+	kubeSchedulerConfig, err := c.Options.Scheduler.GetConfigV1Alpha2(&schedulerv1alpha2.KubeSchedulerConfiguration{
+		HealthzBindAddress: &kubeSchedulerHealthz,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if kubeSchedulerConfig.PodMaxBackoffSeconds == nil {
+		t.Fatal(`kubeSchedulerConfig.PodMaxBackoffSeconds == nil`)
+	}
+	if *kubeSchedulerConfig.PodMaxBackoffSeconds != 100 {
+		t.Error(`*kubeSchedulerConfig.PodMaxBackoffSeconds != 100`)
+	}
+	if kubeSchedulerConfig.HealthzBindAddress == nil {
+		t.Fatal(`kubeSchedulerConfig.HealthzBindAddress == nil`)
+	}
+	if *kubeSchedulerConfig.HealthzBindAddress != "0.0.0.0" {
+		t.Error(`*kubeSchedulerConfig.HealthzBindAddress != "0.0.0.0"`)
+	}
 	if c.Options.Kubelet.Domain != "my.domain" {
 		t.Error(`c.Options.Kubelet.Domain != "my.domain"`)
 	}
@@ -127,10 +147,9 @@ rules:
 	if len(c.Options.Kubelet.CNIConfFile.Content) == 0 {
 		t.Error(`len(c.Options.Kubelet.CNIConfFile.Content) == 0`)
 	}
-	base := &kubeletv1beta1.KubeletConfiguration{
+	kubeletConfig, err := c.Options.Kubelet.GetConfigV1Beta1(&kubeletv1beta1.KubeletConfiguration{
 		ClusterDomain: "hoge.com",
-	}
-	kubeletConfig, err := c.Options.Kubelet.GetConfigV1Beta1(base)
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,12 +187,15 @@ func testClusterYAML117(t *testing.T) {
 	if !reflect.DeepEqual(c.Options.Scheduler.Priorities, []string{"name: some_priority"}) {
 		t.Error(`!reflect.DeepEqual(c.Options.Scheduler.Priorities, []string{"name: some_priority"}`)
 	}
+	_, err = c.Options.Scheduler.GetConfigV1Alpha2(&schedulerv1alpha2.KubeSchedulerConfiguration{})
+	if err == nil {
+		t.Error(`c.Options.Scheduler.GetConfigV1Alpha2() should fail`)
+	}
 
-	base := &kubeletv1beta1.KubeletConfiguration{
+	kubeletConfig, err := c.Options.Kubelet.GetConfigV1Beta1(&kubeletv1beta1.KubeletConfiguration{
 		ClusterDomain:       "hoge.com",
 		ContainerLogMaxSize: "5Mi",
-	}
-	kubeletConfig, err := c.Options.Kubelet.GetConfigV1Beta1(base)
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -307,6 +329,19 @@ rules:
 				Options: Options{
 					Kubelet: KubeletParams{
 						Domain: "a_b.c",
+					},
+				},
+			},
+			true,
+		},
+		{
+			"invalid kubelet config",
+			Cluster{
+				Name:          "testcluster",
+				ServiceSubnet: "10.0.0.0/14",
+				Options: Options{
+					Kubelet: KubeletParams{
+						Config: &unstructured.Unstructured{},
 					},
 				},
 			},
@@ -542,6 +577,20 @@ rules:
 			},
 			false,
 		},
+		{
+			"invalid scheduler config",
+			Cluster{
+				Name:          "testcluster",
+				ServiceSubnet: "10.0.0.0/14",
+				Options: Options{
+					Scheduler: SchedulerParams{
+						Config: &unstructured.Unstructured{},
+					},
+				},
+			},
+			true,
+		},
+
 		{
 			"duplicate node address",
 			Cluster{
