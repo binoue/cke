@@ -19,6 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	schedulerv1 "k8s.io/kube-scheduler/config/v1"
+	schedulerv1alpha2 "k8s.io/kube-scheduler/config/v1alpha2"
 	kubeletv1beta1 "k8s.io/kubelet/config/v1beta1"
 )
 
@@ -106,6 +107,12 @@ func newData() testData {
 		},
 		ServiceSubnet: testServiceSubnet,
 		DNSServers:    testDefaultDNSServers,
+	}
+	schedulerConfig := &unstructured.Unstructured{}
+	schedulerConfig.SetGroupVersionKind(schedulerv1alpha2.SchemeGroupVersion.WithKind("KubeSchedulerConfiguration"))
+	schedulerConfig.Object["healthzBindAddress"] = "0.0.0.0"
+	cluster.Options.Scheduler = cke.SchedulerParams{
+		Config: schedulerConfig,
 	}
 	kubeletConfig := &unstructured.Unstructured{}
 	kubeletConfig.SetGroupVersionKind(kubeletv1beta1.SchemeGroupVersion.WithKind("KubeletConfiguration"))
@@ -261,6 +268,24 @@ func (d testData) withScheduler() testData {
 		st.IsHealthy = true
 		st.Image = cke.KubernetesImage.Name()
 		st.BuiltInParams = k8s.SchedulerParams()
+
+		address := "0.0.0.0"
+		st.Config = &schedulerv1alpha2.KubeSchedulerConfiguration{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "kubescheduler.config.k8s.io/v1alpha2",
+				Kind:       "KubeSchedulerConfiguration",
+			},
+			HealthzBindAddress: &address,
+		}
+	}
+	return d
+}
+
+func (d testData) withSchedulerV1Alpha1() testData {
+	d.Cluster.Options.Scheduler.Config = nil
+	for _, n := range d.ControlPlane() {
+		st := &d.NodeStatus(n).Scheduler
+		st.Config = nil
 	}
 	return d
 }
@@ -762,7 +787,7 @@ func TestDecideOps(t *testing.T) {
 		},
 		{
 			Name: "RestartScheduler4",
-			Input: newData().withAllServices().with(func(d testData) {
+			Input: newData().withAllServices().withSchedulerV1Alpha1().with(func(d testData) {
 				d.NodeStatus(d.ControlPlane()[0]).Scheduler.Extenders = []schedulerv1.Extender{{URLPrefix: `urlPrefix: http://127.0.0.1:8001`}}
 				d.NodeStatus(d.ControlPlane()[1]).Scheduler.Extenders = []schedulerv1.Extender{{URLPrefix: `urlPrefix: http://127.0.0.1:8001`}}
 			}).withSSHNotConnectedNodes(),
@@ -775,7 +800,7 @@ func TestDecideOps(t *testing.T) {
 		},
 		{
 			Name: "RestartScheduler5",
-			Input: newData().withAllServices().with(func(d testData) {
+			Input: newData().withAllServices().withSchedulerV1Alpha1().with(func(d testData) {
 				d.NodeStatus(d.ControlPlane()[0]).Scheduler.Predicates = []schedulerv1.PredicatePolicy{{Name: `some_predicate`}}
 				d.NodeStatus(d.ControlPlane()[1]).Scheduler.Predicates = []schedulerv1.PredicatePolicy{{Name: `some_predicate`}}
 			}).withSSHNotConnectedNodes(),
@@ -788,9 +813,22 @@ func TestDecideOps(t *testing.T) {
 		},
 		{
 			Name: "RestartScheduler6",
-			Input: newData().withAllServices().with(func(d testData) {
+			Input: newData().withAllServices().withSchedulerV1Alpha1().with(func(d testData) {
 				d.NodeStatus(d.ControlPlane()[0]).Scheduler.Priorities = []schedulerv1.PriorityPolicy{{Name: `some_priority`}}
 				d.NodeStatus(d.ControlPlane()[1]).Scheduler.Priorities = []schedulerv1.PriorityPolicy{{Name: `some_priority`}}
+			}).withSSHNotConnectedNodes(),
+			ExpectedOps: []string{
+				"kube-scheduler-restart",
+			},
+			ExpectedTargetNums: map[string]int{
+				"kube-scheduler-restart": 1,
+			},
+		},
+		{
+			Name: "RestartScheduler7",
+			Input: newData().withAllServices().with(func(d testData) {
+				d.NodeStatus(d.ControlPlane()[0]).Scheduler.Config.HealthzBindAddress = nil
+				d.NodeStatus(d.ControlPlane()[1]).Scheduler.Config.HealthzBindAddress = nil
 			}).withSSHNotConnectedNodes(),
 			ExpectedOps: []string{
 				"kube-scheduler-restart",
