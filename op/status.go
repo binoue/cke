@@ -18,7 +18,10 @@ import (
 	"github.com/cybozu-go/log"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	schedulerv1 "k8s.io/kube-scheduler/config/v1"
+	schedulerv1alpha1 "k8s.io/kube-scheduler/config/v1alpha1"
+	schedulerv1alpha2 "k8s.io/kube-scheduler/config/v1alpha2"
 	kubeletv1beta1 "k8s.io/kubelet/config/v1beta1"
 	"sigs.k8s.io/yaml"
 )
@@ -106,29 +109,62 @@ func GetNodeStatus(ctx context.Context, inf cke.Infrastructure, node *cke.Node, 
 			})
 		}
 
-		var policy schedulerv1.Policy
-		// Testing policy file existence is needed for backward compatibility
-		policyStr, _, err := agent.Run(fmt.Sprintf("if [ -f %s ]; then cat %s; fi",
-			PolicyConfigPath, PolicyConfigPath))
+		var schedulerConfig unstructured.Unstructured
+		configStr, _, err := agent.Run(fmt.Sprintf("cat %s", SchedulerConfigPath))
 		if err != nil {
-			log.Error("failed to cat "+PolicyConfigPath, map[string]interface{}{
+			log.Error("failed to cat "+SchedulerConfigPath, map[string]interface{}{
 				log.FnError: err,
 				"node":      node.Address,
 			})
 			return nil, err
 		}
-		err = yaml.Unmarshal(policyStr, &policy)
+		err = yaml.Unmarshal(configStr, &schedulerConfig)
 		if err != nil {
-			log.Error("failed to unmarshal policy config json", map[string]interface{}{
+			log.Error("failed to unmarshal component config yaml to unstructured", map[string]interface{}{
 				log.FnError: err,
 				"node":      node.Address,
-				"data":      policyStr,
+				"data":      configStr,
 			})
 			return nil, err
 		}
-		status.Scheduler.Extenders = policy.Extenders
-		status.Scheduler.Predicates = policy.Predicates
-		status.Scheduler.Priorities = policy.Priorities
+
+		if schedulerConfig.GetAPIVersion() == schedulerv1alpha1.SchemeGroupVersion.String() {
+			var policy schedulerv1.Policy
+			// Testing policy file existence is needed for backward compatibility
+			policyStr, _, err := agent.Run(fmt.Sprintf("if [ -f %s ]; then cat %s; fi",
+				PolicyConfigPath, PolicyConfigPath))
+			if err != nil {
+				log.Error("failed to cat "+PolicyConfigPath, map[string]interface{}{
+					log.FnError: err,
+					"node":      node.Address,
+				})
+				return nil, err
+			}
+			err = yaml.Unmarshal(policyStr, &policy)
+			if err != nil {
+				log.Error("failed to unmarshal policy config json", map[string]interface{}{
+					log.FnError: err,
+					"node":      node.Address,
+					"data":      policyStr,
+				})
+				return nil, err
+			}
+			status.Scheduler.Extenders = policy.Extenders
+			status.Scheduler.Predicates = policy.Predicates
+			status.Scheduler.Priorities = policy.Priorities
+		} else {
+			schedulerConfigV1Alpha2 := schedulerv1alpha2.KubeSchedulerConfiguration{}
+			err = yaml.Unmarshal(configStr, &schedulerConfigV1Alpha2)
+			if err != nil {
+				log.Error("failed to unmarshal component config yaml", map[string]interface{}{
+					log.FnError: err,
+					"node":      node.Address,
+					"data":      configStr,
+				})
+				return nil, err
+			}
+			status.Scheduler.Config = &schedulerConfigV1Alpha2
+		}
 	}
 
 	// TODO: due to the following bug, health status cannot be checked for proxy.

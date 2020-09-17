@@ -12,6 +12,7 @@ import (
 	k8sjson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	apiserverv1 "k8s.io/apiserver/pkg/apis/config/v1"
 	"k8s.io/client-go/tools/clientcmd/api"
+	schedulerv1alpha2 "k8s.io/kube-scheduler/config/v1alpha2"
 	kubeletv1beta1 "k8s.io/kubelet/config/v1beta1"
 )
 
@@ -49,6 +50,16 @@ func controllerManagerKubeconfig(cluster string, ca, clientCrt, clientKey string
 
 func schedulerKubeconfig(cluster string, ca, clientCrt, clientKey string) *api.Config {
 	return cke.Kubeconfig(cluster, "system:kube-scheduler", ca, clientCrt, clientKey)
+}
+
+// GenerateSchedulerConfiguration generates scheduler configuration.
+func GenerateSchedulerConfiguration(params cke.SchedulerParams) schedulerv1alpha2.KubeSchedulerConfiguration {
+	base := schedulerv1alpha2.KubeSchedulerConfiguration{}
+	result, err := params.GetConfigV1Alpha2(&base)
+	if err != nil {
+		panic(err)
+	}
+	return *result
 }
 
 func proxyKubeconfig(cluster string, ca, clientCrt, clientKey string) *api.Config {

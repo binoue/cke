@@ -17,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	schedulerv1 "k8s.io/kube-scheduler/config/v1"
+	schedulerv1alpha2 "k8s.io/kube-scheduler/config/v1alpha2"
 	kubeletv1beta1 "k8s.io/kubelet/config/v1beta1"
 	"sigs.k8s.io/yaml"
 )
@@ -122,9 +123,41 @@ type CNIConfFile struct {
 // SchedulerParams is a set of extra parameters for kube-scheduler.
 type SchedulerParams struct {
 	ServiceParams `json:",inline"`
-	Extenders     []string `json:"extenders"`
-	Predicates    []string `json:"predicates"`
-	Priorities    []string `json:"priorities"`
+	Extenders     []string                   `json:"extenders"`
+	Predicates    []string                   `json:"predicates"`
+	Priorities    []string                   `json:"priorities"`
+	Config        *unstructured.Unstructured `json:"config,omitempty"`
+}
+
+// IsConfigV1Alpha1 returns whether params is v1alpha1.
+func (p SchedulerParams) IsConfigV1Alpha1() bool {
+	return p.Config == nil
+}
+
+// GetConfigV1Alpha2 returns *schedulerv1alpha2.KubeSchedulerConfiguration.
+func (p SchedulerParams) GetConfigV1Alpha2(base *schedulerv1alpha2.KubeSchedulerConfiguration) (*schedulerv1alpha2.KubeSchedulerConfiguration, error) {
+	cfg := *base
+	if p.Config == nil {
+		return nil, errors.New("api version mismatch")
+	}
+
+	if p.Config.GetAPIVersion() != schedulerv1alpha2.SchemeGroupVersion.String() {
+		return nil, fmt.Errorf("unexpected kube-scheduler API version: %s", p.Config.GetAPIVersion())
+	}
+	if p.Config.GetKind() != "KubeSchedulerConfiguration" {
+		return nil, fmt.Errorf("wrong kind for kube-scheduler config: %s", p.Config.GetKind())
+	}
+
+	data, err := json.Marshal(p.Config)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(data, &cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
 }
 
 // KubeletParams is a set of extra parameters for kubelet.
@@ -496,40 +529,49 @@ func validateOptions(opts Options) error {
 		}
 	}
 
-	for _, e := range opts.Scheduler.Extenders {
-		config := schedulerv1.Extender{}
-		err = yaml.Unmarshal([]byte(e), &config)
-		if err != nil {
-			return err
+	if opts.Scheduler.IsConfigV1Alpha1() {
+		for _, e := range opts.Scheduler.Extenders {
+			config := schedulerv1.Extender{}
+			err = yaml.Unmarshal([]byte(e), &config)
+			if err != nil {
+				return err
+			}
+			if len(config.URLPrefix) == 0 {
+				return errors.New("no urlPrefix is provided")
+			}
+			if _, err = url.Parse(config.URLPrefix); err != nil {
+				return err
+			}
 		}
-		if len(config.URLPrefix) == 0 {
-			return errors.New("no urlPrefix is provided")
-		}
-		if _, err = url.Parse(config.URLPrefix); err != nil {
-			return err
-		}
-	}
 
-	for _, e := range opts.Scheduler.Predicates {
-		config := schedulerv1.PredicatePolicy{}
-		err = yaml.Unmarshal([]byte(e), &config)
-		if err != nil {
-			return err
+		for _, e := range opts.Scheduler.Predicates {
+			config := schedulerv1.PredicatePolicy{}
+			err = yaml.Unmarshal([]byte(e), &config)
+			if err != nil {
+				return err
+			}
+			if len(config.Name) == 0 {
+				return errors.New("no name is provided")
+			}
 		}
-		if len(config.Name) == 0 {
-			return errors.New("no name is provided")
-		}
-	}
 
-	for _, e := range opts.Scheduler.Priorities {
-		config := schedulerv1.PriorityPolicy{}
-		err = yaml.Unmarshal([]byte(e), &config)
+		for _, e := range opts.Scheduler.Priorities {
+			config := schedulerv1.PriorityPolicy{}
+			err = yaml.Unmarshal([]byte(e), &config)
+			if err != nil {
+				return err
+			}
+			if len(config.Name) == 0 {
+				return errors.New("no name is provided")
+			}
+		}
+	} else {
+		base := schedulerv1alpha2.KubeSchedulerConfiguration{}
+		_, err := opts.Scheduler.GetConfigV1Alpha2(&base)
 		if err != nil {
 			return err
 		}
-		if len(config.Name) == 0 {
-			return errors.New("no name is provided")
-		}
+		// nothing to check
 	}
 
 	return nil

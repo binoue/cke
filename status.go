@@ -5,6 +5,7 @@ import (
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	schedulerv1 "k8s.io/kube-scheduler/config/v1"
+	schedulerv1alpha2 "k8s.io/kube-scheduler/config/v1alpha2"
 	kubeletv1beta1 "k8s.io/kubelet/config/v1beta1"
 )
 
@@ -141,6 +142,7 @@ type SchedulerStatus struct {
 	Extenders  []schedulerv1.Extender
 	Predicates []schedulerv1.PredicatePolicy
 	Priorities []schedulerv1.PriorityPolicy
+	Config     *schedulerv1alpha2.KubeSchedulerConfiguration
 }
 
 // KubeletStatus represents kubelet status and health

@@ -174,20 +174,23 @@ Please see the source code for more details.
 
 ### SchedulerParams
 
-| Name          | Required | Type       | Description                                     |
-| ------------- | -------- | ---------- | ----------------------------------------------- |
-| `extenders`   | false    | `[]string` | Extender parameters                             |
-| `predicates`  | false    | `[]string` | Predicate parameters                            |
-| `priorities`  | false    | `[]string` | Priority parameters                             |
-| `extra_args`  | false    | array      | Extra command-line arguments.  List of strings. |
-| `extra_binds` | false    | array      | Extra bind mounts.  List of `Mount`.            |
-| `extra_env`   | false    | object     | Extra environment variables.                    |
+| Name          | Required | Type                                 | Description                                           |
+| ------------- | -------- | ------------------------------------ | ----------------------------------------------------- |
+| `extenders`   | false    | `[]string`                           | Extender parameters                                   |
+| `predicates`  | false    | `[]string`                           | Predicate parameters                                  |
+| `priorities`  | false    | `[]string`                           | Priority parameters                                   |
+| `extra_args`  | false    | array                                | Extra command-line arguments.  List of strings.       |
+| `extra_binds` | false    | array                                | Extra bind mounts.  List of `Mount`.                  |
+| `extra_env`   | false    | object                               | Extra environment variables.                          |
+| `config`      | false    | *v1alpha2.KubeSchedulerConfiguration | https://pkg.go.dev/k8s.io/kops/pkg/apis/kops/v1alpha2 |
 
 Elements of `extenders`, `predicates` and `priorities` are contents of
 [`Extender`](https://github.com/kubernetes/kube-scheduler/blob/release-1.18/config/v1/types.go#L190),
 [`PredicatePolicy`](https://github.com/kubernetes/kube-scheduler/blob/release-1.18/config/v1/types.go#L50) and
 [`PriorityPolicy`](https://github.com/kubernetes/kube-scheduler/blob/release-1.18/config/v1/types.go#L60)
 in JSON format, respectively.
+
+If `config` is specified, the following fields are ignored: `extenders`, `predicates`, `priorities`.
 
 ### CNIConfFile
 
