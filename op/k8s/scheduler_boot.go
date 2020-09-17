@@ -143,13 +143,13 @@ func (c prepareSchedulerFilesCommand) Run(ctx context.Context, inf cke.Infrastru
 kind: KubeSchedulerConfiguration
 schedulerName: default-scheduler
 clientConnection:
-kubeconfig: %s
+  kubeconfig: %s
 algorithmSource:
-policy:
-	file:
-	path: %s
+  policy:
+    file:
+      path: %s
 leaderElection:
-leaderElect: true
+  leaderElect: true
 `, kubeconfigPath, op.PolicyConfigPath)
 
 		return c.files.AddFile(ctx, op.SchedulerConfigPath, func(ctx context.Context, n *cke.Node) ([]byte, error) {
