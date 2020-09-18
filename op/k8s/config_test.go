@@ -9,8 +9,47 @@ import (
 	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	componentv1alpha1 "k8s.io/component-base/config/v1alpha1"
+	schedulerv1alpha2 "k8s.io/kube-scheduler/config/v1alpha2"
 	kubeletv1beta1 "k8s.io/kubelet/config/v1beta1"
 )
+
+func TestGenerateSchedulerConfiguration(t *testing.T) {
+	t.Parallel()
+
+	cfg := &unstructured.Unstructured{}
+	cfg.SetGroupVersionKind(schedulerv1alpha2.SchemeGroupVersion.WithKind("KubeSchedulerConfiguration"))
+	cfg.Object["leaderElection"] = map[string]interface{}{
+		"leaderElect": false,
+	}
+	cfg.Object["podMaxBackoffSeconds"] = 100
+
+	input := cke.SchedulerParams{
+		Config: cfg,
+	}
+
+	var podMaxBackoffSeconds int64 = 100
+	expected := schedulerv1alpha2.KubeSchedulerConfiguration{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "KubeSchedulerConfiguration",
+			APIVersion: "kubescheduler.config.k8s.io/v1alpha2",
+		},
+		LeaderElection: schedulerv1alpha2.KubeSchedulerLeaderElectionConfiguration{
+			LeaderElectionConfiguration: componentv1alpha1.LeaderElectionConfiguration{
+				LeaderElect: boolPointer(true),
+			},
+		},
+		ClientConnection: componentv1alpha1.ClientConnectionConfiguration{
+			Kubeconfig: "/etc/kubernetes/scheduler/kubeconfig",
+		},
+		PodMaxBackoffSeconds: &podMaxBackoffSeconds,
+	}
+
+	conf := GenerateSchedulerConfiguration(input)
+	if !reflect.DeepEqual(conf, expected) {
+		t.Errorf("GenerateSchedulerConfiguration() generated unexpected result:\n%s", cmp.Diff(conf, expected))
+	}
+}
 
 func TestGenerateKubeletConfiguration(t *testing.T) {
 	t.Parallel()

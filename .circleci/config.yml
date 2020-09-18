@@ -261,7 +261,7 @@ workflows:
             - build
       - mtest-docker-functions
       - mtest-containerd-functions
-      - mtest-containerd-functions-oldcluster
+      - mtest-containerd-functions-oldstylecluster
       - mtest-containerd-operators
       - mtest-containerd-robustness
       - mtest-upgrade:
