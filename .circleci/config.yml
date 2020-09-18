@@ -177,6 +177,7 @@ jobs:
       - run-mtest:
           runtime: remote
           suite: ./upgrade
+          cluster: cke-cluster-old.yml
   mtest-docker-functions:
     docker:
       - image: google/cloud-sdk
