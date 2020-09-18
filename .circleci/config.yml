@@ -27,7 +27,7 @@ commands:
           background: true
       - run:
           command: |
-            ./bin/run-mtest.sh <<parameters.runtime>> <<parameters.suite>> <<parameters.target>> <<parameters.cluster>>
+            ./bin/run-mtest.sh "<<parameters.runtime>>" "<<parameters.suite>>" "<<parameters.target>>" "<<parameters.cluster>>"
           no_output_timeout: 20m
       - run:
           name: Set the instance lifetime
