@@ -18,6 +18,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	componentv1alpha1 "k8s.io/component-base/config/v1alpha1"
 	schedulerv1 "k8s.io/kube-scheduler/config/v1"
 	schedulerv1alpha2 "k8s.io/kube-scheduler/config/v1alpha2"
 	kubeletv1beta1 "k8s.io/kubelet/config/v1beta1"
@@ -270,10 +271,19 @@ func (d testData) withScheduler() testData {
 		st.BuiltInParams = k8s.SchedulerParams()
 
 		address := "0.0.0.0"
+		leaderElect := true
 		st.Config = &schedulerv1alpha2.KubeSchedulerConfiguration{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "kubescheduler.config.k8s.io/v1alpha2",
 				Kind:       "KubeSchedulerConfiguration",
+			},
+			ClientConnection: componentv1alpha1.ClientConnectionConfiguration{
+				Kubeconfig: op.SchedulerKubeConfigPath,
+			},
+			LeaderElection: schedulerv1alpha2.KubeSchedulerLeaderElectionConfiguration{
+				LeaderElectionConfiguration: componentv1alpha1.LeaderElectionConfiguration{
+					LeaderElect: &leaderElect,
+				},
 			},
 			HealthzBindAddress: &address,
 		}

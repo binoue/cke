@@ -74,7 +74,6 @@ type prepareSchedulerFilesCommand struct {
 }
 
 func (c prepareSchedulerFilesCommand) Run(ctx context.Context, inf cke.Infrastructure, _ string) error {
-	const kubeconfigPath = "/etc/kubernetes/scheduler/kubeconfig"
 	storage := inf.Storage()
 
 	ca, err := storage.GetCACertificate(ctx, "kubernetes")
@@ -89,7 +88,7 @@ func (c prepareSchedulerFilesCommand) Run(ctx context.Context, inf cke.Infrastru
 		cfg := schedulerKubeconfig(c.cluster, ca, crt, key)
 		return clientcmd.Write(*cfg)
 	}
-	err = c.files.AddFile(ctx, kubeconfigPath, g)
+	err = c.files.AddFile(ctx, op.SchedulerKubeConfigPath, g)
 	if err != nil {
 		return err
 	}
@@ -150,7 +149,7 @@ algorithmSource:
       path: %s
 leaderElection:
   leaderElect: true
-`, kubeconfigPath, op.PolicyConfigPath)
+`, op.SchedulerKubeConfigPath, op.PolicyConfigPath)
 
 		return c.files.AddFile(ctx, op.SchedulerConfigPath, func(ctx context.Context, n *cke.Node) ([]byte, error) {
 			return []byte(schedulerConfig), nil

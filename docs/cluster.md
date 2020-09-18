@@ -192,6 +192,10 @@ in JSON format, respectively.
 
 If `config` is specified, the following fields are ignored: `extenders`, `predicates`, `priorities`.
 
+Some fields in `config` have CKE-defined default values.
+Some other fields are forced to have certain values.
+Please see the source code for more details.
+
 ### CNIConfFile
 
 | Name      | Required | Type   | Description                 |
