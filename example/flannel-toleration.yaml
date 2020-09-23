@@ -9,6 +9,7 @@ spec:
       tolerations:
       - operator: Exists
 ---
+# Tweak network range to avoid using GCP auto mode VPC range.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -17,7 +18,7 @@ metadata:
 data:
   net-conf.json: |
     {
-      "Network": "10.244.0.0/16",
+      "Network": "192.168.0.0/16",
       "Backend": {
         "Type": "vxlan"
       }
