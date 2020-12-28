@@ -168,11 +168,11 @@ func (p SchedulerParams) MergeConfigV1Alpha2(base *schedulerv1alpha2.KubeSchedul
 		return nil, fmt.Errorf("wrong kind for kube-scheduler config: %s", p.Config.GetKind())
 	}
 
-	data, err := json.Marshal(p.Config)
+	data, err := yaml.Marshal(p.Config)
 	if err != nil {
 		return nil, err
 	}
-	err = json.Unmarshal(data, &cfg)
+	err = yaml.Unmarshal(data, &cfg)
 	if err != nil {
 		return nil, err
 	}
