@@ -220,6 +220,10 @@ func (p KubeletParams) MergeConfigV1Beta1(base *kubeletv1beta1.KubeletConfigurat
 		return &cfg, nil
 	}
 
+	if p.CgroupDriver != "" || p.Domain != "" || p.AllowSwap != false || p.ContainerLogMaxSize != "" || p.ContainerLogMaxFiles != 0 {
+		return nil, fmt.Errorf("both Config and domin/allow_swap/container_log_max_size/container_log_max_files should not be configured: %#v", p)
+	}
+
 	if p.Config.GetAPIVersion() != kubeletv1beta1.SchemeGroupVersion.String() {
 		return nil, fmt.Errorf("unexpected kubelet API version: %s", p.Config.GetAPIVersion())
 	}
