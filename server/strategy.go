@@ -298,7 +298,10 @@ func decideClusterDNSOps(apiServer *cke.Node, c *cke.Cluster, ks cke.KubernetesC
 	base := &v1beta1.KubeletConfiguration{}
 	kubeletConfig, err := c.Options.Kubelet.MergeConfigV1Beta1(base)
 	if err != nil {
-		panic(err)
+		log.Error("failed to generate KubeletConfiguration for ClusterDNS", map[string]interface{}{
+			log.FnError: err,
+		})
+		return ops
 	}
 	desiredClusterDomain := kubeletConfig.ClusterDomain
 
@@ -332,7 +335,10 @@ func decideNodeDNSOps(apiServer *cke.Node, c *cke.Cluster, ks cke.KubernetesClus
 	base := &v1beta1.KubeletConfiguration{}
 	kubeletConfig, err := c.Options.Kubelet.MergeConfigV1Beta1(base)
 	if err != nil {
-		panic(err)
+		log.Error("failed to generate KubeletConfiguration for NodeDNS", map[string]interface{}{
+			log.FnError: err,
+		})
+		return ops
 	}
 	desiredClusterDomain := kubeletConfig.ClusterDomain
 
