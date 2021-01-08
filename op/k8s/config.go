@@ -144,7 +144,7 @@ func kubeletKubeconfig(cluster string, n *cke.Node, caPath, certPath, keyPath st
 	return cfg
 }
 
-func newKubeletConfiguration(cert, key, ca string, params cke.KubeletParams) kubeletv1beta1.KubeletConfiguration {
+func newKubeletConfiguration(cert, key, ca string, params cke.KubeletParams) (*kubeletv1beta1.KubeletConfiguration, error) {
 	// default values
 	base := &kubeletv1beta1.KubeletConfiguration{
 		RuntimeRequestTimeout: metav1.Duration{Duration: 15 * time.Minute},
@@ -154,7 +154,7 @@ func newKubeletConfiguration(cert, key, ca string, params cke.KubeletParams) kub
 	// This won't raise an error because of prior validation
 	c, err := params.MergeConfigV1Beta1(base)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// forced values
@@ -166,17 +166,20 @@ func newKubeletConfiguration(cert, key, ca string, params cke.KubeletParams) kub
 	}
 	c.Authorization = kubeletv1beta1.KubeletAuthorization{Mode: kubeletv1beta1.KubeletAuthorizationModeWebhook}
 
-	return *c
+	return c, nil
 }
 
 // GenerateKubeletConfiguration generates kubelet configuration.
-func GenerateKubeletConfiguration(params cke.KubeletParams, nodeAddress string) kubeletv1beta1.KubeletConfiguration {
+func GenerateKubeletConfiguration(params cke.KubeletParams, nodeAddress string) (*kubeletv1beta1.KubeletConfiguration, error) {
 	caPath := op.K8sPKIPath("ca.crt")
 	tlsCertPath := op.K8sPKIPath("kubelet.crt")
 	tlsKeyPath := op.K8sPKIPath("kubelet.key")
-	cfg := newKubeletConfiguration(tlsCertPath, tlsKeyPath, caPath, params)
+	cfg, err := newKubeletConfiguration(tlsCertPath, tlsKeyPath, caPath, params)
+	if err != nil {
+		return nil, err
+	}
 	cfg.ClusterDNS = []string{nodeAddress}
-	return cfg
+	return cfg, nil
 }
 
 func int32Pointer(input int32) *int32 {

@@ -568,7 +568,13 @@ func (nf *NodeFilter) KubeletOutdatedNodes() (nodes []*cke.Node) {
 
 	for _, n := range nf.cluster.Nodes {
 		st := nf.nodeStatus(n).Kubelet
-		currentConfig := k8s.GenerateKubeletConfiguration(currentOpts, n.Address)
+		currentConfig, err := k8s.GenerateKubeletConfiguration(currentOpts, n.Address)
+		if err != nil {
+			log.Error("failed to generate KubeletConfiguration", map[string]interface{}{
+				log.FnError: err,
+			})
+			return nil
+		}
 		currentBuiltIn := k8s.KubeletServiceParams(n, currentOpts)
 		if st.Config != nil {
 			// CgroupDriver should be kept while node is running.

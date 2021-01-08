@@ -84,8 +84,11 @@ type prepareKubeletConfigCommand struct {
 
 func (c prepareKubeletConfigCommand) Run(ctx context.Context, inf cke.Infrastructure, _ string) error {
 	g := func(ctx context.Context, n *cke.Node) ([]byte, error) {
-		cfg := GenerateKubeletConfiguration(c.params, n.Address)
-		return encodeToYAML(&cfg)
+		cfg, err := GenerateKubeletConfiguration(c.params, n.Address)
+		if err != nil {
+			return nil, err
+		}
+		return encodeToYAML(cfg)
 	}
 	err := c.files.AddFile(ctx, kubeletConfigPath, g)
 	if err != nil {

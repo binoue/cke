@@ -550,7 +550,7 @@ func testOperators(isDegraded bool) {
 			runCKE(ckeImageURL)
 		}
 
-		By("Changing options to have scheduler field contain both Config and Extenders/Predicates/Priorities")
+		By("Changing options")
 		// this will run these ops:
 		// - EtcdRestartOp
 		// - ControllerManagerRestartOp
@@ -565,10 +565,18 @@ func testOperators(isDegraded bool) {
 		cluster.Options.Kubelet.Domain = "neconeco"
 		clusterSetAndWait(cluster)
 
+		By("Changing options to have scheduler field contain both Config and Extenders/Predicates/Priorities")
+		cluster = getCluster()
 		cluster.Options.Scheduler.ExtraEnvvar = map[string]string{"AAA": "aaa"}
 		cluster.Options.Scheduler.Extenders = []string{"urlPrefix: http://127.0.0.1:8000"}
 		cluster.Options.Scheduler.Predicates = []string{"name: some_predicate"}
 		cluster.Options.Scheduler.Priorities = []string{"name: some_priority"}
+		_, err = ckecliClusterSet(cluster)
+		Expect(err).Should(HaveOccurred())
+
+		By("Changing options to have kubelet field contain both Config and the fields exclusive to Config")
+		cluster = getCluster()
+		cluster.Options.Kubelet.Config.Object["clusterDomain"] = "neco.local"
 		_, err = ckecliClusterSet(cluster)
 		Expect(err).Should(HaveOccurred())
 	})
