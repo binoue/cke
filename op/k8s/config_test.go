@@ -127,7 +127,13 @@ func TestGenerateKubeletConfiguration(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		conf := GenerateKubeletConfiguration(c.Input, "1.2.3.4")
+		conf, err := GenerateKubeletConfiguration(c.Input, "1.2.3.4")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if conf == nil {
+			t.Fatal("conf should not be nil")
+		}
 		if !reflect.DeepEqual(conf, c.Expected) {
 			t.Errorf("case %q: GenerateKubeletConfiguration() generated unexpected result:\n%s", c.Name, cmp.Diff(conf, c.Expected))
 		}

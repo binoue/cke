@@ -220,7 +220,7 @@ func (p KubeletParams) MergeConfigV1Beta1(base *kubeletv1beta1.KubeletConfigurat
 		return &cfg, nil
 	}
 
-	if p.CgroupDriver != "" || p.Domain != "" || p.AllowSwap != false || p.ContainerLogMaxSize != "" || p.ContainerLogMaxFiles != 0 {
+	if p.CgroupDriver != "" || p.Domain != "" || p.AllowSwap || p.ContainerLogMaxSize != "" || p.ContainerLogMaxFiles != 0 {
 		return nil, fmt.Errorf("both Config and domin/allow_swap/container_log_max_size/container_log_max_files should not be configured: %#v", p)
 	}
 
