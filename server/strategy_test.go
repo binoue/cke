@@ -124,14 +124,16 @@ func newData() testData {
 	cluster.Options.Scheduler = cke.SchedulerParams{
 		Config: schedulerConfig,
 	}
-	kubeletConfig := &unstructured.Unstructured{}
-	kubeletConfig.SetGroupVersionKind(kubeletv1beta1.SchemeGroupVersion.WithKind("KubeletConfiguration"))
-	kubeletConfig.Object["containerLogMaxSize"] = "20Mi"
-	kubeletConfig.Object["clusterDomain"] = testDefaultDNSDomain
+	// kubeletConfig := &unstructured.Unstructured{}
+	// kubeletConfig.SetGroupVersionKind(kubeletv1beta1.SchemeGroupVersion.WithKind("KubeletConfiguration"))
+	// kubeletConfig.Object["containerLogMaxSize"] = "20Mi"
+	// kubeletConfig.Object["clusterDomain"] = testDefaultDNSDomain
 	cluster.Options.Kubelet = cke.KubeletParams{
 		ContainerRuntime:         "remote",
 		ContainerRuntimeEndpoint: "/var/run/k8s-containerd.sock",
-		Config:                   kubeletConfig,
+		Domain:                   testDefaultDNSDomain,
+		ContainerLogMaxSize:      "20Mi",
+		Config:                   nil,
 	}
 
 	nodeReadyStatus := corev1.NodeStatus{
